@@ -1,0 +1,15 @@
+[tools]
+poetry = { version = 'latest', pyproject = 'pyproject.toml' }
+python = { version = "3.11.9", virtualenv = ".venv" }
+
+
+[env]
+# Database
+PGHOST = "localhost"
+PGPORT = "5432"
+PGUSER = "user"
+PGPASSWORD = "passwd"
+PGDATABASE = "database"
+
+[settings]
+experimental = true

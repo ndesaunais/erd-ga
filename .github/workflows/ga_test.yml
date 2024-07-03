@@ -1,0 +1,56 @@
+on:
+  push:
+    paths:
+      - "tests/migrations/*.sql"
+env:
+  POSTGRES_USER: user
+  POSTGRES_PASSWORD: passwd
+  POSTGRES_DB: database
+
+jobs:
+  er_dump_job:
+    runs-on: ubuntu-latest
+    name: An entity relationship dump
+    # Service containers to run with `runner-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run all migrations
+        run: |
+          POSTGRES_USER=${{ env.POSTGRES_USER }} POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} POSTGRES_DB=${{ env.POSTGRES_DB }} POSTGRES_PORT=${{ job.services.postgres.ports['5432'] }} POSTGRES_HOST="127.0.0.1" ./tests/run_migrations.sh tests/migrations
+      - name: Erd action step
+        uses: ./ # Uses an action in the root directory
+        id: erd
+        with:
+          url: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@postgres:${{ job.services.postgres.ports['5432'] }}/${{ env.POSTGRES_DB }}
+          output: out.mmd
+      - name: Commit
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: "${{ github.workspace }}/out.mmd"
+          message: "🔖 updating mermaid schema"
+          push: true
+      - name: Get the erd dump
+        run: |
+          path="${{ github.workspace }}/out.mmd"
+          echo "$(<"$path" )"

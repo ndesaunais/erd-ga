@@ -1,0 +1,22 @@
+---
+name: 'erd-mermaid'
+author: 'github'
+description: 'A GitHub Action to generate entity relationship diagram in mermaid format'
+inputs:
+  url:  # url to connect to database
+    description: 'The database url'
+    required: true
+    default: 'postgresql://user:passwd@localhost:5432/database'
+  output:
+    description: 'Output path to generate the mermaid file'
+    required: true
+    default: 'out.mmd'
+runs:
+  using: 'docker'
+  image: 'docker://ghcr.io/ndesaunais/erd-ga:latest'
+  env:
+    URL: ${{ inputs.url }}
+    OUTPUT: ${{ inputs.output }}
+branding:
+  icon: 'check-square'
+  color: 'white'
